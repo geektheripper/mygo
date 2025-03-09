@@ -5,14 +5,11 @@ go 1.23.0
 toolchain go1.23.7
 
 require (
-	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/charmbracelet/log v0.4.0
 	github.com/dustin/go-humanize v1.0.1
 	github.com/geektheripper/go-gutils/git/git_utils v0.0.2
 	github.com/geektheripper/go-gutils/git/go_pkg v0.0.1
-	github.com/geektheripper/go-gutils/git/hack_ssh v0.0.1
 	github.com/geektheripper/go-gutils/git/virtual_repo v0.0.1
-	github.com/go-git/go-billy/v5 v5.6.2
 	github.com/go-git/go-git/v5 v5.14.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
@@ -29,7 +26,9 @@ require (
 	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
+	github.com/geektheripper/go-gutils/git/hack_ssh v0.0.1 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
+	github.com/go-git/go-billy/v5 v5.6.2 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
