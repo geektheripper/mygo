@@ -49,11 +49,10 @@ var publishCmd = &cobra.Command{
 		}
 
 		vrepo, err := virtual_repo.NewVirtualRepo(remote, packageName)
-		defer vrepo.Close()
-
 		if err != nil {
 			logger.Fatalf("failed to create virtual repo: %v", err)
 		}
+		defer vrepo.Close()
 
 		packageMap, err := vrepo.ListPackages()
 		if err != nil {
@@ -61,15 +60,28 @@ var publishCmd = &cobra.Command{
 		}
 
 		pkg, ok := packageMap[packageName]
-		if !ok {
-			if upgradeType != "" {
-				logger.Fatalf("failed to apply %s, package not found in remote", upgradeType)
-			}
-			version = "0.0.1"
-		} else {
-			version = pkg.NextVersion(upgradeType).String()
-			logger.Printf("next version: %s", version)
+
+		// if package but try to upgrade
+		if !ok && upgradeType != "" {
+			logger.Fatalf("failed to apply %s, package not found in remote", upgradeType)
 		}
+
+		// if specified version already exists
+		if ok {
+			for _, v := range pkg.Versions {
+				if v.String() == version {
+					logger.Fatalf("version %s already exists", version)
+				}
+			}
+		}
+
+		if version == "" {
+			version = pkg.NextVersion(upgradeType).String()
+		}
+
+		tag := fmt.Sprintf("%s/v%s", packageName, version)
+
+		logger.Printf("collecting files for %s", tag)
 
 		if !viper.GetBool("no-license") {
 			_, err := vrepo.Import(
@@ -99,7 +111,6 @@ var publishCmd = &cobra.Command{
 
 		logger.Printf("imported %d files, %s", report.Count, humanize.Bytes(report.Size))
 
-		tag := fmt.Sprintf("%s/v%s", packageName, version)
 		if err := vrepo.Publish(tag, message); err != nil {
 			logger.Fatalf("failed to publish: %v", err)
 		}
