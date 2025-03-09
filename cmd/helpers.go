@@ -1,13 +1,11 @@
-package utils
+package cmd
 
 import (
 	"path/filepath"
 
-	"github.com/geektheripper/mygo/internal/log"
+	"github.com/geektheripper/go-gutils/git/git_utils"
 	"github.com/spf13/viper"
 )
-
-var logger = log.GetLogger()
 
 func MustGetRepo() string {
 	repo := viper.GetString("repo")
@@ -15,7 +13,12 @@ func MustGetRepo() string {
 		logger.Fatalf("repo is not set")
 	}
 
-	if !IsGitRepo(repo) {
+	ok, err := git_utils.IsGitRepo(repo)
+	if err != nil {
+		logger.Fatalf("failed to check if repo is a git repository: %v", err)
+	}
+
+	if !ok {
 		logger.Fatalf("repo is not a git repository: %s", repo)
 	}
 
@@ -31,5 +34,5 @@ func MustGetPackageNamePath(packageName string) (string, string) {
 		logger.Fatalf("package name must be a relative path: %s", packageName)
 	}
 
-	return packageName, filepath.Join(MustGetRepo(), packageName)
+	return filepath.Clean(packageName), filepath.Clean(filepath.Join(MustGetRepo(), packageName))
 }

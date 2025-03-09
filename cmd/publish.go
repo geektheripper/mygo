@@ -5,9 +5,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/geektheripper/mygo/cmd/utils"
-	"github.com/geektheripper/mygo/pkg/local_repo"
-	"github.com/geektheripper/mygo/pkg/virtual_repo"
+	"github.com/geektheripper/go-gutils/git/git_utils"
+	"github.com/geektheripper/go-gutils/git/go_pkg"
+	"github.com/geektheripper/go-gutils/git/virtual_repo"
+	"github.com/go-git/go-git/v5"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -15,12 +16,13 @@ import (
 )
 
 var publishCmd = &cobra.Command{
-	Use:   "publish",
-	Short: "publish a package to the remote repository",
-	Args:  cobra.ExactArgs(1),
+	Use:     "publish",
+	Aliases: []string{"p"},
+	Short:   "publish a package to the remote repository",
+	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		repoPath := utils.MustGetRepo()
-		packageName, packagePath := utils.MustGetPackageNamePath(args[0])
+		repoPath := MustGetRepo()
+		packageName, packagePath := MustGetPackageNamePath(args[0])
 		includes := viper.GetStringSlice("includes")
 		message := viper.GetString("message")
 		version := viper.GetString("version")
@@ -34,17 +36,21 @@ var publishCmd = &cobra.Command{
 			upgradeType = "patch"
 		}
 
-		lrepo, err := local_repo.LoadLocalRepo(repoPath)
+		lrepo, err := git.PlainOpen(repoPath)
 		if err != nil {
 			logger.Fatalf("failed to load local repo: %v", err)
 		}
 
 		remote := viper.GetString("remote")
 		if !strings.Contains(remote, ":") {
-			remote = lrepo.GetRemoteURL(remote)
+			_remote, err := lrepo.Remote(remote)
+			if err != nil {
+				logger.Fatalf("failed to get remote: %v", err)
+			}
+			remote = _remote.Config().URLs[0]
 		}
 
-		if !utils.ValidateGitRemoteURL(remote) {
+		if !git_utils.ValidateGitRemoteURL(remote) {
 			logger.Fatalf("invalid remote: %s", err)
 		}
 
@@ -52,9 +58,8 @@ var publishCmd = &cobra.Command{
 		if err != nil {
 			logger.Fatalf("failed to create virtual repo: %v", err)
 		}
-		defer vrepo.Close()
 
-		packageMap, err := vrepo.ListPackages()
+		packageMap, err := go_pkg.ResolveVirtualRepo(vrepo)
 		if err != nil {
 			logger.Fatalf("failed to fetch packages form remote: %v", err)
 		}
@@ -66,17 +71,21 @@ var publishCmd = &cobra.Command{
 			logger.Fatalf("failed to apply %s, package not found in remote", upgradeType)
 		}
 
-		// if specified version already exists
 		if ok {
+			// if specified version already exists
 			for _, v := range pkg.Versions {
 				if v.String() == version {
 					logger.Fatalf("version %s already exists", version)
 				}
 			}
+
+			if version == "" {
+				version = pkg.NextVersion(upgradeType).String()
+			}
 		}
 
 		if version == "" {
-			version = pkg.NextVersion(upgradeType).String()
+			version = "0.0.1"
 		}
 
 		tag := fmt.Sprintf("%s/v%s", packageName, version)
@@ -111,7 +120,7 @@ var publishCmd = &cobra.Command{
 
 		logger.Printf("imported %d files, %s", report.Count, humanize.Bytes(report.Size))
 
-		if err := vrepo.Publish(tag, message); err != nil {
+		if err := vrepo.PushTag(tag, message); err != nil {
 			logger.Fatalf("failed to publish: %v", err)
 		}
 
@@ -129,7 +138,7 @@ func init() {
 	publishCmd.Flags().Bool("patch", false, "publish a patch version")
 	publishCmd.MarkFlagsMutuallyExclusive("version", "minor", "major", "patch")
 
-	publishCmd.Flags().StringP("message", "m", "Publish", "the commit message")
+	publishCmd.Flags().StringP("message", "m", "publish", "the commit message")
 
 	publishCmd.Flags().Bool("no-license", false, "default copy license from root, use this to skip")
 	publishCmd.Flags().StringArray("includes", []string{}, "include files to the package from root")

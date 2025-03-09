@@ -1,13 +1,15 @@
 package cmd
 
 import (
-	"github.com/geektheripper/mygo/cmd/utils"
-	"github.com/geektheripper/mygo/internal/log"
+	"os"
+
+	"github.com/charmbracelet/log"
+	"github.com/geektheripper/go-gutils/git/git_utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var logger = log.GetLogger()
+var logger = log.New(os.Stderr)
 
 var rootCmd = &cobra.Command{
 	Use:   "mygo",
@@ -24,7 +26,7 @@ func Execute() {
 func init() {
 	viper.SetEnvPrefix("MYGO")
 
-	defaultRepo, _ := utils.GetProjectRoot()
+	defaultRepo, _ := git_utils.FindGitRoot(".")
 	rootCmd.PersistentFlags().StringP("repo", "r", defaultRepo, "the remote repository to manage")
 	viper.BindEnv("repo")
 

@@ -3,7 +3,6 @@ package cmd
 import (
 	"os"
 
-	"github.com/geektheripper/mygo/cmd/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -12,7 +11,7 @@ var newCmd = &cobra.Command{
 	Short: "create a new sub package",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		packageName, packagePath := utils.MustGetPackageNamePath(args[0])
+		packageName, packagePath := MustGetPackageNamePath(args[0])
 
 		_, err := os.Stat(packagePath)
 		if err == nil {
